@@ -1,0 +1,166 @@
+---
+title: "Machine Learning Project"
+author: "Martin Peak"
+date: "Wednesday, June 10, 2015"
+output: slidy_presentation
+---
+
+Objectives & Constraints: 
+
+Build model to predict class and describe analysis
+explain why i made the choices i made
+Describe what I expect the out of sample error to be
+Estimate out of sample error with cross validation
+<2000 words
+
+```{r CodeChunk(will be removed)}
+
+setwd("~/R/Coursera work/Practical Machine Learning - Jun 15/Project")
+library(caret)
+library(doParallel)
+cl <- makeCluster(detectCores())
+registerDoParallel(cl)
+
+#Read in training and test set
+trainingdirty <- read.csv('pml-training.csv')
+validation <- read.csv('pml-testing.csv')
+
+#Remove junk variables
+training <- trainingdirty[,-1:-7]
+
+#Removing columns with large numbers of NAs & Blanks
+training <- training[ ,colSums(is.na(training))<19000]
+training <- training[ ,colSums(training=='')<19000]
+
+# EDA
+summary(training)
+matrix <- as.data.frame(corMatrix)
+plot(matrix)
+# Scatterplot Matrix with Ellipses
+
+
+
+library(caret)
+SM1 <- featurePlot(x = trainingsmall[, 1:10],
+            y = trainingsmall$classe,
+            plot = "ellipse",
+            ## Add a key at the top
+            auto.key = list(columns = 5))
+
+SM2 <- featurePlot(x = trainingsmall[, 11:20],
+            y = trainingsmall$classe,
+            plot = "ellipse",
+            ## Add a key at the top
+            auto.key = list(columns = 5))
+
+SM3 <- featurePlot(x = trainingsmall[, 21:30],
+            y = trainingsmall$classe,
+            plot = "ellipse",
+            ## Add a key at the top
+            auto.key = list(columns = 5))
+
+SM4 <- featurePlot(x = trainingsmall[, 31:40],
+            y = trainingsmall$classe,
+            plot = "ellipse",
+            ## Add a key at the top
+            auto.key = list(columns = 5))
+SM5 <- featurePlot(x = trainingsmall[, 41:52],
+            y = trainingsmall$classe,
+            plot = "ellipse",
+            ## Add a key at the top
+            auto.key = list(columns = 5))
+
+library(AppliedPredictiveModeling)
+transparentTheme(trans = .2)
+
+jpeg(filename = "ScatterplotMatrix1.jpeg"); SM1; dev.off()
+
+# Assessment and fixing of missing values
+# Correlation analysis
+
+# Model Creation
+
+##choose and apply models
+# Possible Models - 
+(getModelInfo())
+inTrain = createDataPartition(training$classe, p = 0.4)[[1]]
+trainingsmall = training[ inTrain,]
+testingsmall = training[ -inTrain,]
+
+
+RandomForestModel <- train(classe~., data=trainingsmall,
+                           method='rf')
+
+modelLookup(model = "rf")
+
+#De-correlation to improve accuracy
+corMatrix <- cor(trainingsmall[,-53])
+highCorr <- findCorrelation(corMatrix, cutoff = 0.8, verbose=FALSE)
+
+RandomForestModel2 <- train(classe~., data=trainingsmall[,-highCorr],
+                           method='rf', importance=TRUE,
+                           verbose=TRUE)
+
+#To improve accuracy i have tried:
+#         increasing training dataset
+#         removing highly correlated variable at varying cutoffs
+#         centering and scaling data (no effect)
+        
+
+#Out of bag error (oob) - 
+RandomForestModel$finalModel
+RandomForestModel2$finalModel
+
+# AUC of the model
+        
+#2nd Model
+
+AdaBagModel <- train(classe~., data=trainingsmall,
+                       method='AdaBag')
+
+AdaBoostModel <- train(classe~., data=trainingsmall,
+                       method = 'AdaBoost.M1')
+
+
+##Cross Validation
+# - Prediction about out of sample error
+# - estimate of error using cross validation
+
+##Model Evaluation & Refinement (training set)
+
+RFMCM0.4 <- confusionMatrix(testingsmall$classe,predict(RandomForestModel,testingsmall))
+
+varImp(RandomForestModel, scale=TRUE)
+
+RFM2CM0.40.8<- confusionMatrix(testingsmall$classe,predict(RandomForestModel2,testingsmall))
+
+RFM2CM0.40.8
+
+varImp(RandomForestModel2, scale=TRUE)
+
+## Model Evaluation (test set)
+answerstest <- predict(RandomForestModel2,testingsmall, type="prob")
+
+library(pROC)
+
+result.roc <- roc(testingsmall$classe, answerstest$A) # Draw ROC curve.
+plot(result.roc, print.thres="best", print.thres.best.method="closest.topleft")
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,
+                quote=FALSE,row.names=FALSE,
+                col.names=FALSE)
+  }
+}
+
+answersC <- as.character(answers)
+pml_write_files(answersC)
+
+## Conclusion
+
+
+```
+

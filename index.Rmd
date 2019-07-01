@@ -2,7 +2,9 @@
 title: "Course Project - Writeup"
 author: "Martin Peak"
 date: "Wednesday, June 10, 2015"
-output: slidy_presentation
+output:
+  ioslides_presentation: default
+  slidy_presentation: default
 ---
 
 ##Introduction, Objectives & Constraints: 
